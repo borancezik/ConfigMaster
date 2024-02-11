@@ -8,24 +8,32 @@ using ConfigMaster.Server.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 using StackExchange.Redis;
+using ConfigMaster.Common.Behaviors;
+using ConfigMaster.Features.Config.Command.AddCommand;
+using ConfigMaster.Features.Config.Query.GetById;
+using ConfigMaster.Server.Features.Config.Service;
+using FluentValidation;
+using MediatR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddScoped<IConfigRepository, ConfigRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<CacheService>();
 builder.Services.AddScoped<ICacheMethod, MemoryCacheMethod>();
 builder.Services.AddScoped<ICacheMethod, DistributedCacheMethod>();
 builder.Services.AddScoped<MemoryCacheMethod>();
 builder.Services.AddScoped<DistributedCacheMethod>();
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+builder.Services.AddTransient<IValidator<ConfigQuery>, ConfigQueryValidator>();
+builder.Services.AddTransient<IValidator<ConfigCommand>, ConfigCommandValidator>();
 builder.Services.AddFeatureManagement();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -48,7 +56,6 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
