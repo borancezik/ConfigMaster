@@ -1,0 +1,6 @@
+@ConfigMaster.Server_HostAddress = http://localhost:5069
+
+GET {{ConfigMaster.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
