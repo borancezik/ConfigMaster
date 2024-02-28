@@ -1,9 +1,44 @@
+import { useEffect, useState } from "react";
+import { Requests } from "../../libs/Api";
+import { getEntityUrl } from "../../utils/StringUtils";
+
 const Index = () => {
   const Applications = [
     { Id: "1", Name: "protein", Status: "1" },
     { Id: "2", Name: "tbs", Status: "0" },
     { Id: "3", Name: "imece", Status: "1" },
   ];
+
+  useEffect(() => {
+    getConfigs();
+  }, []);
+
+  const [configs, setConfigs] = useState([]);
+
+  const getConfigs = async () => {
+    try {
+      let url = getEntityUrl({
+        api: {
+          baseName: "BaseApiName",
+          url: `configs`,
+        },
+      });
+      Requests()
+        .CommonRequest.get({
+          url: url,
+        })
+        .then(({ data }) => {
+          setConfigs(data);
+          console.log(data);
+        })
+        .catch((error) => {
+          console.log(errorMessage);
+        });
+    } catch {
+      console.log("Network Error!");
+    }
+  };
+
   return (
     <div className="w-full h-full p-20">
       {Applications.map((application, index) => (

@@ -14,6 +14,7 @@ using ConfigMaster.Features.Config.Query.GetById;
 using ConfigMaster.Server.Features.Config.Service;
 using FluentValidation;
 using MediatR;
+using ConfigMaster.Server.Features.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,7 +53,6 @@ builder.Services.AddMediatR(config => config.RegisterServicesFromAssembly(typeof
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -61,6 +61,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+ConfigEndpoints.MapEndpoints(app);
 
 app.UseHttpsRedirection();
 
