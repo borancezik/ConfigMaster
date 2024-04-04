@@ -3,14 +3,14 @@
 This project is a configuration management application developed using .NET Core 8.0, PostgreSQL. The application provides an interface to manage configurations and store settings. It is still in development stage.
 
 # Technologies
--.NET Core 8.0
--Vertical Slice Architecture
--Minimal API
--SignalR
--PostgreSQL
--Specification Design Pattern
--Repository Design Pattern
--In-Memory and Distributed Caching
+* .NET Core 8.0
+* Vertical Slice Architecture
+* Minimal API
+* SignalR
+* PostgreSQL
+* Specification Design Pattern
+* Repository Design Pattern
+* In-Memory and Distributed Caching
 
 # Getting Started
 To run the project in a local environment, follow these steps:
