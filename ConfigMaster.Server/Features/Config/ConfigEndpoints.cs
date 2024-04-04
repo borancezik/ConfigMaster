@@ -28,9 +28,9 @@ public static class ConfigEndpoints
             return await sender.Send(new ConfigQuery() { Id = id });
         });
 
-        app.MapGet("api/configs", async ([FromQuery] int pageNumber, [FromQuery] int pageSize, ISender sender) =>
+        app.MapGet("api/configs", async (ISender sender) =>
         {
-            return await sender.Send(new ConfigGetAllQuery() { Page = pageNumber, Size = pageSize });
+            return await sender.Send(new ConfigGetAllQuery() { Page = 1, Size = 10 });
         });
 
         app.MapGet("api/configs/production/{applicationId}", async (int applicationId, ISender sender) =>

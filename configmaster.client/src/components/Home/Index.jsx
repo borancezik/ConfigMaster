@@ -19,7 +19,6 @@ const Index = () => {
     try {
       let url = getEntityUrl({
         api: {
-          baseName: "BaseApiName",
           url: `configs`,
         },
       });
@@ -32,7 +31,7 @@ const Index = () => {
           console.log(data);
         })
         .catch((error) => {
-          console.log(errorMessage);
+          console.log(error);
         });
     } catch {
       console.log("Network Error!");
