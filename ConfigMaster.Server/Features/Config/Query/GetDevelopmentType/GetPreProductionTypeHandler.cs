@@ -4,16 +4,16 @@ using ConfigMaster.Server.Features.Config.Domain;
 using ConfigMaster.Server.Features.Config.Service;
 using MediatR;
 
-namespace ConfigMaster.Features.Config.Query.GetPreProductionType;
+namespace ConfigMaster.Features.Config.Query.GetDevelopmentType;
 
-public class GetPreProductionTypeHandler : IRequestHandler<GetPreProductionTypeQuery, ApiResponse<ConfigEntity>>
+public class GetDevelopmentTypeHandler : IRequestHandler<GetDevelopmentTypeQuery, ApiResponse<ConfigEntity>>
 {
     private readonly IConfigService _configService;
-    public GetPreProductionTypeHandler(IConfigService configService)
+    public GetDevelopmentTypeHandler(IConfigService configService)
     {
         _configService = configService;
     }
-    public Task<ApiResponse<ConfigEntity>> Handle(GetPreProductionTypeQuery request, CancellationToken cancellationToken)
+    public Task<ApiResponse<ConfigEntity>> Handle(GetDevelopmentTypeQuery request, CancellationToken cancellationToken)
     {
         var specification = new GetProductionTypeSpecification(request.ApplicationId);
         return _configService.GetByFilter(specification);

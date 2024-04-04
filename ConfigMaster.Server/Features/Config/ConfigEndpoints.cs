@@ -2,7 +2,7 @@
 using ConfigMaster.Features.Config.Command.UpdateCommand;
 using ConfigMaster.Features.Config.Query.GetAll;
 using ConfigMaster.Features.Config.Query.GetById;
-using ConfigMaster.Features.Config.Query.GetPreProductionType;
+using ConfigMaster.Features.Config.Query.GetDevelopmentType;
 using ConfigMaster.Features.Config.Query.GetProductionType;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -38,9 +38,9 @@ public static class ConfigEndpoints
             return await sender.Send(new GetProductionTypeQuery() { ApplicationId = applicationId });
         });
 
-        app.MapGet("api/configs/preproduction/{applicationId}", async (int applicationId, ISender sender) =>
+        app.MapGet("api/configs/development/{applicationId}", async (int applicationId, ISender sender) =>
         {
-            return await sender.Send(new GetPreProductionTypeQuery() { ApplicationId = applicationId });
+            return await sender.Send(new GetDevelopmentTypeQuery() { ApplicationId = applicationId });
         });
     }
 }

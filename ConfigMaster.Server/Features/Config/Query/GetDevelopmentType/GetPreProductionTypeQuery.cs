@@ -2,9 +2,9 @@
 using ConfigMaster.Server.Features.Config.Domain;
 using MediatR;
 
-namespace ConfigMaster.Features.Config.Query.GetPreProductionType;
+namespace ConfigMaster.Features.Config.Query.GetDevelopmentType;
 
-public record GetPreProductionTypeQuery : IRequest<ApiResponse<ConfigEntity>>
+public record GetDevelopmentTypeQuery : IRequest<ApiResponse<ConfigEntity>>
 {
     public int ApplicationId { get; set; }
 }
