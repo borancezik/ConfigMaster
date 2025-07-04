@@ -70,11 +70,11 @@ public static class ApplicationConfig
         {
             try
             {
-                var response = httpClient.GetAsync(url).GetAwaiter().GetResult();
+                var response = await httpClient.GetAsync(url);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    string jsonString = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    string jsonString = await response.Content.ReadAsStringAsync();
 
                     var remoteSettings = JsonConvert.DeserializeObject<Response>(jsonString);
 
