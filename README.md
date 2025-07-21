@@ -38,33 +38,38 @@ To run the project in your local development environment, you have two primary o
 
 This is the fastest way to get all services (Backend, Frontend, and PostgreSQL) up and running.
 
-1.  **Prerequisites:**
-    * [Docker](https://docs.docker.com/get-docker/) installed and running on your system.
-    * [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop) installed.
+1. **Prerequisites:**
 
-2.  **Configuration:**
-    * Ensure your `docker-compose.yaml` file is correctly configured for your PostgreSQL service and application settings. You might need to adjust database credentials or port mappings if they differ from the defaults.
+   * [Docker](https://docs.docker.com/get-docker/) installed and running on your system.
+   * [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop) installed.
 
-3.  **Build and Run:**
-    * Navigate to the root directory of your project (where the `docker-compose.yaml` file is located).
-    * Execute the following command to build the images and start all services:
+2. **Configuration:**
 
-        ```bash
-        docker compose up --build -d
-        ```
-        * `--build`: Builds (or rebuilds) the images before starting containers. This is crucial for the first run or after code changes.
-        * `-d`: Runs the containers in detached mode (in the background).
+   * Ensure your `docker-compose.yaml` file is correctly configured for your PostgreSQL service and application settings. You might need to adjust database credentials or port mappings if they differ from the defaults.
 
-4.  **Access the Application:**
-    * Once the containers are up and running, you can access the React frontend typically at `http://localhost:5173` (or the port you've configured in your `docker-compose.yaml` for the frontend service).
-    * The .NET Core Backend will typically be exposed on `https://localhost:7045` (or the port configured for the backend service).
+3. **Build and Run:**
 
-5.  **Stop Services:**
-    * To stop all running services and remove containers, networks, and volumes created by `docker compose up`:
+   Navigate to the root directory of your project (where the `docker-compose.yaml` file is located) and run:
 
-        ```bash
-        docker compose down
-        ```
+   ```bash
+   docker compose up --build -d
+   ```
+
+   * `--build`: Builds (or rebuilds) the images before starting containers. This is crucial for the first run or after code changes.
+   * `-d`: Runs the containers in detached mode (in the background).
+
+4. **Access the Application:**
+
+   * React Frontend: [http://localhost:5173](http://localhost:5173)
+   * .NET Core Backend: [https://localhost:7045](https://localhost:7045)
+
+5. **Stop Services:**
+
+   To stop all running services and remove containers, networks, and volumes created by Docker Compose:
+
+   ```bash
+   docker compose down
+   ```
 
 ### Option 2: Running Components Individually
 
@@ -76,7 +81,36 @@ Install and configure a PostgreSQL database. Update the necessary database conne
 
 #### 2. Run the Backend
 
-Navigate to the root directory of the project (where the Backend folder is located) and run the following command:
+Navigate to the root directory of the project (where the Backend folder is located) and run:
 
 ```bash
-dotnet run
+ dotnet run
+```
+
+This command will start the backend API, typically at [https://localhost:7045](https://localhost:7045) (or a similar port).
+
+#### 3. Run the Frontend
+
+Navigate to the `ConfigMaster.Client` directory, install dependencies, and start the application:
+
+```bash
+cd ConfigMaster.Client
+npm install # or yarn install
+npm run dev # or yarn dev
+```
+
+This command will start the React application, typically at [http://localhost:5173](http://localhost:5173) (or a similar port).
+
+Open your browser and navigate to [http://localhost:5173](http://localhost:5173) to view the application.
+
+## Contribution
+
+There are plenty of opportunities to contribute to the ConfigMaster project. All contributions are welcome!
+
+* If you encounter any bugs or issues, please feel free to open an **Issue**.
+* If you'd like to propose a new feature or improve existing code, you can submit a **Pull Request**.
+* Please review the `CONTRIBUTING.md` file (if it exists) before contributing.
+
+## License
+
+This project is licensed under the MIT License. For more information, see the `LICENSE` file.
