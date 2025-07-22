@@ -10,7 +10,8 @@ public interface IRepositoryBase<T> where T : class, IEntity, new()
     Task<T> AddAsync(T entity);
     Task<T> Update(T entity);
     Task<T> GetFirstOrDefaultAsync(Expression<Func<T, bool>> filter);
-    Task<List<T>> GetAll(int queryPage, int querySize);
+    Task<List<T>> GetAll();
+    Task<List<T>> GetPage(int queryPage, int querySize);
     Task<T> GetByFilter(Specification<T> specification);
 }
 

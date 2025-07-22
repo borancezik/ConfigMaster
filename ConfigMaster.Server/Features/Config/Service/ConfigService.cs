@@ -35,9 +35,14 @@ public class ConfigService : IConfigService
 
     }
 
-    public async Task<List<ConfigEntity>> GetAll(int pageNumber, int pageSize)
+    public async Task<List<ConfigEntity>> GetAll()
     {
-        return await _configRepository.GetAll(pageNumber, pageSize);
+        return await _configRepository.GetAll();
+    }
+
+    public async Task<List<ConfigEntity>> GetPage(int pageNumber, int pageSize)
+    {
+        return await _configRepository.GetPage(pageNumber, pageSize);
     }
 
     public async Task<ApiResponse<ConfigEntity>> GetByFilter(Specification<ConfigEntity> specification)

@@ -14,6 +14,6 @@ public class ConfigGetAllQueryHandler : IRequestHandler<ConfigGetAllQuery, List<
 
     public async Task<List<ConfigEntity>> Handle(ConfigGetAllQuery request, CancellationToken cancellationToken)
     {
-        return await _configService.GetAll(request.Page,request.Size);
+        return await _configService.GetAll();
     }
 }

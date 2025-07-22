@@ -25,9 +25,14 @@ where TContext : ApplicationContext
         return entity;
     }
 
-    public virtual async Task<List<TEntity>> GetAll(int queryPage, int querySize)
+    public virtual async Task<List<TEntity>> GetAll()
     {
-        return _dbSet.Skip((queryPage - 1) * querySize).Take(querySize).ToList();
+        return await _dbSet.ToListAsync();
+    }
+
+    public virtual async Task<List<TEntity>> GetPage(int queryPage, int querySize)
+    {
+        return await _dbSet.Skip((queryPage - 1) * querySize).Take(querySize).ToListAsync();
     }
 
     public virtual async Task<TEntity> GetByFilter(Specification<TEntity> specification)

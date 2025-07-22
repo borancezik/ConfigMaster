@@ -30,7 +30,7 @@ public static class ConfigEndpoints
 
         app.MapGet("api/configs", async (ISender sender) =>
         {
-            return await sender.Send(new ConfigGetAllQuery() { Page = 1, Size = 10 });
+            return await sender.Send(new ConfigGetAllQuery());
         });
 
         app.MapGet("api/configs/production/{applicationId}", async (int applicationId, ISender sender) =>

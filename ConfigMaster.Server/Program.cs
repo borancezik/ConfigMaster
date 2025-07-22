@@ -15,6 +15,7 @@ using ConfigMaster.Server.Features.Config.Service;
 using FluentValidation;
 using MediatR;
 using ConfigMaster.Server.Features.Config;
+using ConfigMaster.Server.Features.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +64,7 @@ if (app.Environment.IsDevelopment())
 }
 
 ConfigEndpoints.MapEndpoints(app);
+ApplicationEndpoints.MapEndpoints(app);
 
 app.UseHttpsRedirection();
 
