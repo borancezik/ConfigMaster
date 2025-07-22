@@ -2,7 +2,6 @@
 using ConfigMaster.Server.Common.Models.Utils;
 using ConfigMaster.Server.Common.Service.CacheService.Concrete;
 using ConfigMaster.Server.Common.Service.SocketServerService;
-using ConfigMaster.Server.Common.Specification;
 using ConfigMaster.Server.Features.Config.Data;
 using ConfigMaster.Server.Features.Config.Domain;
 using Microsoft.AspNetCore.SignalR;
@@ -33,29 +32,6 @@ public class ConfigService : IConfigService
             return ApiResponse<ConfigEntity>.FailureResult(Constants.NotUpdated);
         }
 
-    }
-
-    public async Task<List<ConfigEntity>> GetAll()
-    {
-        return await _configRepository.GetAll();
-    }
-
-    public async Task<List<ConfigEntity>> GetPage(int pageNumber, int pageSize)
-    {
-        return await _configRepository.GetPage(pageNumber, pageSize);
-    }
-
-    public async Task<ApiResponse<ConfigEntity>> GetByFilter(Specification<ConfigEntity> specification)
-    {
-        var result = await _configRepository.GetByFilter(specification);
-        if (result is not null)
-        {
-            return ApiResponse<ConfigEntity>.SuccessResult(result);
-        }
-        else
-        {
-            return ApiResponse<ConfigEntity>.FailureResult(Constants.NotFound);
-        }
     }
 
     public async Task<ApiResponse<ConfigEntity>> GetByIdAsync(long id)
@@ -91,5 +67,10 @@ public class ConfigService : IConfigService
         {
             return ApiResponse<ConfigEntity>.FailureResult(Constants.NotUpdated);
         }
+    }
+
+    public async Task<List<ConfigEntity>> GetByApplicationId(int applicationId)
+    {
+        return await _configRepository.GetByApplicationId(applicationId);
     }
 }

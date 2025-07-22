@@ -69,7 +69,7 @@ ApplicationEndpoints.MapEndpoints(app);
 app.UseHttpsRedirection();
 
 app.UseCors(builder => builder
-    .WithOrigins("http://localhost:5173/","https://localhost:5173/","http://localhost:5173", "https://localhost:5173")
+    .WithOrigins("http://localhost:5173/","https://localhost:5173/","http://localhost:5173", "https://localhost:5173", "http://localhost:51151/", "https://localhost:51151/", "http://localhost:51151", "https://localhost:51151")
     .AllowAnyMethod()
     .AllowAnyHeader());
 
