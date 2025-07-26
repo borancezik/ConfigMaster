@@ -1,6 +1,7 @@
 ﻿using ConfigMaster.Server.DataAccess;
 using ConfigMaster.Server.Features.Config.Domain;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace ConfigMaster.Server.Features.Config.Data;
 
@@ -19,6 +20,12 @@ public class ConfigRepository(ApplicationContext context) : IConfigRepository
     {
         return await _context.configs
             .Where(c => c.ApplicationId == applicationId).ToListAsync();
+    }
+
+    public async Task<ConfigEntity> GetByFilter(Expression<Func<ConfigEntity, bool>> filterExpression)
+    {
+        return await _context.configs
+            .FirstOrDefaultAsync(filterExpression);
     }
 
     public async Task<ConfigEntity> GetByIdAsync(long id)

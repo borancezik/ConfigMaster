@@ -1,5 +1,6 @@
 ﻿using ConfigMaster.Server.Common.Models;
 using ConfigMaster.Server.Features.Config.Domain;
+using System.Linq.Expressions;
 
 namespace ConfigMaster.Server.Features.Config.Service;
 
@@ -9,4 +10,5 @@ public interface IConfigService
     Task<ApiResponse<ConfigEntity>> AddAsync(ConfigEntity entity);
     Task<ApiResponse<ConfigEntity>> UpdateAsync(ConfigEntity entity);
     Task<List<ConfigEntity>> GetByApplicationId(int applicationId);
+    Task<ConfigEntity> GetByFilter(Expression<Func<ConfigEntity, bool>> filterExpression);
 }

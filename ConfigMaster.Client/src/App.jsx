@@ -6,8 +6,10 @@ import {
     AppBar, Toolbar, InputAdornment,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Checkbox, Select, MenuItem, FormControl, InputLabel,
-    Grid, CircularProgress // Yükleme göstergesi için eklendi
+    Grid, CircularProgress,
+    Snackbar
 } from '@mui/material';
+import MuiAlert from '@mui/material/Alert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -15,8 +17,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AppsIcon from '@mui/icons-material/Apps';
 import CloseIcon from '@mui/icons-material/Close';
 
+// Helper for Snackbar Alert
+const Alert = React.forwardRef(function Alert(props, ref) {
+    return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
+
 // API'nin temel URL'si.
-const apiBase = 'https://localhost:7200/api'; // Bu kýsmý sizin belirttiðiniz gibi güncelledim
+const apiBase = 'https://localhost:7200/api';
 
 // Enum for EnvType (matching C# enum values)
 const EnvType = {
@@ -50,26 +57,30 @@ const getConfigTypeName = (value) => {
     }
 };
 
-// NewApplicationDialog, ApplicationTable ve ConfigDetailsDialog bileþenleri ayný kalacak
-// Sadece ilgili ConfigListDialog bileþenini güncelleyeceðim.
-
 function NewApplicationDialog({ open, onClose, onAdd }) {
     const [name, setName] = useState('');
     const [domain, setDomain] = useState('');
     const [port, setPort] = useState('');
-    const [loading, setLoading] = useState(false); // Yükleme durumu
+    const [loading, setLoading] = useState(false);
 
     const handleAdd = async () => {
-        if (!name || !domain || !port) return alert('Please fill in all fields.');
+        if (!name || !domain || !port) {
+            alert('Please fill in all fields.');
+            return;
+        }
 
-        setLoading(true); // Yüklemeyi baþlat
+        setLoading(true);
         try {
-            const response = await fetch(`${apiBase}/applications`, {
+            const response = await fetch(`${apiBase}/applications/add`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name, domain, port: Number(port) }),
+                body: JSON.stringify({
+                    name: name,
+                    domain: domain,
+                    port: port
+                }),
             });
 
             if (!response.ok) {
@@ -77,15 +88,20 @@ function NewApplicationDialog({ open, onClose, onAdd }) {
                 throw new Error(`Failed to add application: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
-            const newApp = await response.json();
-            onAdd(newApp); // Yeni uygulamayý ana bileþene ekle
-            setName(''); setDomain(''); setPort('');
-            onClose();
+            const apiResponse = await response.json();
+            if (apiResponse.isSuccess && apiResponse.data) {
+                onAdd(apiResponse.data);
+                setName(''); setDomain(''); setPort('');
+                onClose();
+            } else {
+                throw new Error(apiResponse.message || 'Failed to add application with unknown error.');
+            }
+
         } catch (error) {
             console.error('Error adding application:', error);
             alert(`Error adding application: ${error.message}`);
         } finally {
-            setLoading(false); // Yüklemeyi bitir
+            setLoading(false);
         }
     };
 
@@ -95,7 +111,13 @@ function NewApplicationDialog({ open, onClose, onAdd }) {
             <DialogContent sx={{ pt: 2, pb: 2 }}>
                 <TextField label="Name" fullWidth margin="dense" value={name} onChange={e => setName(e.target.value)} />
                 <TextField label="Domain" fullWidth margin="dense" value={domain} onChange={e => setDomain(e.target.value)} />
-                <TextField label="Port" fullWidth type="number" margin="dense" value={port} onChange={e => setPort(e.target.value)} />
+                <TextField
+                    label="Port"
+                    fullWidth
+                    margin="dense"
+                    value={port}
+                    onChange={e => setPort(e.target.value)}
+                />
             </DialogContent>
             <DialogActions sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
                 <Button onClick={onClose} variant="outlined" disabled={loading}>Cancel</Button>
@@ -109,7 +131,6 @@ function NewApplicationDialog({ open, onClose, onAdd }) {
 
 function ApplicationTable({ applications, onSelect, onDelete, loading, error }) {
     const [filter, setFilter] = useState('All');
-    // Arama iþlevi için state
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredApplications = applications.filter(app => {
@@ -217,8 +238,7 @@ function ApplicationTable({ applications, onSelect, onDelete, loading, error }) 
     );
 }
 
-// Dialog component for displaying and editing configurations
-function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeName, selectedAppId }) {
+function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeName, selectedAppId, onDeleteConfig, showSnackbar }) {
     const [editedConfigs, setEditedConfigs] = useState({});
     const [loading, setLoading] = useState(false);
 
@@ -236,29 +256,99 @@ function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeNa
 
     const handleSave = async () => {
         setLoading(true);
+        let hasError = false; // Herhangi bir güncellemede hata olup olmadýðýný tutar
         try {
+            // Her bir konfigürasyonu döngüye al
             for (const config of configs) {
                 const currentEditedText = editedConfigs[config.id];
+                // Yalnýzca deðiþiklik varsa API isteði yap
                 if (currentEditedText !== config.config) {
-                    const response = await fetch(`${apiBase}/configurations/${config.id}`, { // PUT /api/configurations/{id}
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ config: currentEditedText }),
-                    });
+                    const updateCommand = {
+                        id: config.id,
+                        applicationId: selectedAppId, // veya config.applicationId, hangisi doðruysa
+                        envType: config.envType,
+                        configType: config.configType,
+                        config: currentEditedText
+                    };
 
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Failed to update config ${config.id}: ${response.status} ${response.statusText} - ${errorText}`);
+                    try {
+                        const response = await fetch(`${apiBase}/configs/update`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(updateCommand),
+                        });
+
+                        const contentType = response.headers.get("content-type");
+                        let apiResponse;
+                        let errorMessage = `Failed to update config ${config.id}: ${response.status} ${response.statusText}`;
+
+                        if (contentType && contentType.includes("application/json")) {
+                            apiResponse = await response.json();
+                            if (response.ok && apiResponse.isSuccess) {
+                                onUpdateConfig(config.id, currentEditedText);
+                                showSnackbar('Configuration updated successfully!', 'success');
+                            } else {
+                                hasError = true;
+                                errorMessage = apiResponse.message || errorMessage;
+                                showSnackbar(errorMessage, 'error');
+                                console.error('Error updating config (API response):', apiResponse);
+                            }
+                        } else {
+                            const rawText = await response.text();
+                            hasError = true;
+                            errorMessage = `Unexpected response format for config ${config.id}. Status: ${response.status}, Raw Response: ${rawText}`;
+                            showSnackbar(errorMessage, 'error');
+                            console.error('Error updating config (Raw response):', rawText);
+                        }
+                    } catch (fetchError) {
+                        // Að hatasý, CORS veya JSON ayrýþtýrma hatasý gibi durumlar
+                        hasError = true;
+                        console.error(`Error during fetch for config ${config.id}:`, fetchError);
+                        showSnackbar(`Network error or malformed response for config ${config.id}: ${fetchError.message}`, 'error');
                     }
-                    onUpdateConfig(config.id, currentEditedText, selectedAppId);
                 }
             }
-            onClose();
+            // Tüm iþlemler bittikten sonra, eðer hiç hata olmadýysa dialogu kapat
+            if (!hasError) {
+                onClose();
+            }
         } catch (error) {
-            console.error('Error saving configurations:', error);
-            alert(`Error saving configurations: ${error.message}`);
+            // Toplam 'Save Changes' sürecinde beklenmedik bir hata olursa
+            hasError = true;
+            console.error('Error in save configurations process:', error);
+            showSnackbar(`An unexpected error occurred: ${error.message}`, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (configId) => {
+        if (!window.confirm('Are you sure you want to delete this configuration?')) return;
+
+        setLoading(true);
+        try {
+            const response = await fetch(`${apiBase}/configurations/${configId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to delete configuration: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            onDeleteConfig(configId);
+            setEditedConfigs(prev => {
+                const newEdited = { ...prev };
+                delete newEdited[configId];
+                return newEdited;
+            });
+            showSnackbar('Configuration deleted successfully!', 'success');
+
+        } catch (err) {
+            console.error('Error deleting configuration:', err);
+            showSnackbar(`Error deleting configuration: ${err.message}`, 'error');
         } finally {
             setLoading(false);
         }
@@ -289,7 +379,22 @@ function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeNa
                 ) : (
                     <List sx={{ pt: 0 }}>
                         {configs.map(config => (
-                            <ListItem key={config.id} sx={{ flexDirection: 'column', alignItems: 'flex-start', mb: 2, border: '1px solid #e0e0e0', borderRadius: '8px', p: 1.5 }}>
+                            <ListItem
+                                key={config.id}
+                                sx={{
+                                    flexDirection: 'column',
+                                    alignItems: 'flex-start',
+                                    mb: 2,
+                                    border: '1px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    p: 1.5,
+                                    position: 'relative',
+                                    '&:hover .delete-button': {
+                                        opacity: 1,
+                                        pointerEvents: 'auto',
+                                    },
+                                }}
+                            >
                                 <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5, textTransform: 'uppercase' }}>
                                     Type: {getConfigTypeName(config.configType)}
                                 </Typography>
@@ -303,6 +408,24 @@ function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeNa
                                     onChange={(e) => handleChange(config.id, e.target.value)}
                                     sx={{ mt: 0.5, mb: 1 }}
                                 />
+                                <IconButton
+                                    aria-label="delete"
+                                    onClick={() => handleDelete(config.id)}
+                                    className="delete-button"
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        color: (theme) => theme.palette.error.main,
+                                        zIndex: 1,
+                                        opacity: 0,
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease-in-out',
+                                    }}
+                                    disabled={loading}
+                                >
+                                    <DeleteIcon fontSize="small" />
+                                </IconButton>
                             </ListItem>
                         ))}
                     </List>
@@ -318,7 +441,6 @@ function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeNa
     );
 }
 
-
 function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
     const [configs, setConfigs] = useState([]);
     const [newConfigText, setNewConfigText] = useState('');
@@ -330,37 +452,52 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (!open || !applicationId) {
-            setConfigs([]);
-            return;
-        }
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-        const fetchConfigs = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                // Konfigürasyonlarý çekmek için yeni URL yapýsý
-                const response = await fetch(`${apiBase}/configs/getbyapplicationid/${applicationId}`);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Failed to fetch configurations: ${response.status} ${response.statusText} - ${errorText}`);
-                }
-                const data = await response.json();
-                setConfigs(data);
-            } catch (err) {
-                console.error('Error fetching configurations:', err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
+    // Snackbar gösterme helper fonksiyonu
+    const showSnackbar = (message, severity) => {
+        setSnackbarMessage(message);
+        setSnackbarSeverity(severity);
+        setSnackbarOpen(true);
+    };
+
+    const fetchConfigs = async () => {
+        if (!applicationId) return;
+
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${apiBase}/configs/getbyapplicationid/${applicationId}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to fetch configurations: ${response.status} ${response.statusText} - ${errorText}`);
             }
-        };
+            const data = await response.json();
+            setConfigs(data);
+        } catch (err) {
+            console.error('Error fetching configurations:', err);
+            setError(err.message);
+            showSnackbar(`Error fetching configurations: ${err.message}`, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        fetchConfigs();
+    useEffect(() => {
+        if (open && applicationId) {
+            fetchConfigs();
+        } else {
+            setConfigs([]);
+        }
     }, [applicationId, open]);
 
     const handleAdd = async () => {
-        if (!newConfigText) return alert('Please enter config content.');
+        if (!newConfigText) {
+            showSnackbar('Please enter config content.', 'warning');
+            return;
+        }
 
         setLoading(true);
         try {
@@ -371,7 +508,7 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                 config: newConfigText
             };
 
-            const response = await fetch(`${apiBase}/configurations`, { // Bu endpoint deðiþmedi
+            const response = await fetch(`${apiBase}/configs/add`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -379,44 +516,64 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                 body: JSON.stringify(newConfigItem),
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to add configuration: ${response.status} ${response.statusText} - ${errorText}`);
-            }
+            const apiResponse = await response.json();
 
-            const addedConfig = await response.json();
-            setConfigs(prev => [...prev, addedConfig]);
-            setNewConfigText('');
+            if (response.ok && apiResponse.isSuccess) {
+                showSnackbar('Configuration added successfully!', 'success');
+                setNewConfigText('');
+                fetchConfigs();
+            } else {
+                const errorMessage = apiResponse.message || `Failed to add configuration: ${response.status} ${response.statusText}`;
+                throw new Error(errorMessage);
+            }
         } catch (err) {
             console.error('Error adding configuration:', err);
-            alert(`Error adding configuration: ${err.message}`);
+            showSnackbar(`Error adding configuration: ${err.message}`, 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this configuration?')) return;
+    const handleDeleteConfigFromList = (configIdToDelete) => {
+        setConfigs(prev => prev.filter(c => c.id !== configIdToDelete));
+        setConfigsForDetailsDialog(prev => prev.filter(c => c.id !== configIdToDelete));
+        showSnackbar('Configuration deleted successfully!', 'success');
+        // Ýsteðe baðlý olarak, tam yenileme isterseniz fetchConfigs() çaðrýlabilir
+    };
+
+
+    const handleDeleteEnvType = async (envTypeToDelete) => {
+        if (!window.confirm(`Are you sure you want to delete ALL configurations for the ${getEnvTypeName(envTypeToDelete)} environment? This action cannot be undone.`)) {
+            return;
+        }
 
         setLoading(true);
         try {
-            const response = await fetch(`${apiBase}/configurations/${id}`, { // Bu endpoint deðiþmedi
+            const response = await fetch(`${apiBase}/configurations/application/${applicationId}/environment/${envTypeToDelete}`, {
                 method: 'DELETE',
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Failed to delete configuration: ${response.status} ${response.statusText} - ${errorText}`);
+                throw new Error(`Failed to delete configurations for environment ${getEnvTypeName(envTypeToDelete)}: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
-            setConfigs(prev => prev.filter(c => c.id !== id));
+            showSnackbar(`${getEnvTypeName(envTypeToDelete)} environment configurations deleted successfully!`, 'success');
+
+            setConfigs(prev => prev.filter(c => c.envType !== envTypeToDelete));
+            if (selectedEnvType === envTypeToDelete) {
+                setDetailsDialogOpen(false);
+                setSelectedEnvType(null);
+                setConfigsForDetailsDialog([]);
+            }
         } catch (err) {
-            console.error('Error deleting configuration:', err);
-            alert(`Error deleting configuration: ${err.message}`);
+            console.error(`Error deleting configurations for environment ${getEnvTypeName(envTypeToDelete)}:`, err);
+            showSnackbar(`Error deleting environment configurations: ${err.message}`, 'error');
         } finally {
             setLoading(false);
         }
     };
+
 
     const handleEnvTypeClick = (envType) => {
         setSelectedEnvType(envType);
@@ -424,7 +581,7 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
         setDetailsDialogOpen(true);
     };
 
-    const handleUpdateConfigValue = (configId, newConfigText, currentAppId) => {
+    const handleUpdateConfigValue = (configId, newConfigText) => {
         setConfigs(prevConfigs =>
             prevConfigs.map(config =>
                 config.id === configId
@@ -434,7 +591,13 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
         );
     };
 
-    // Group configs by EnvType
+    const handleCloseSnackbar = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbarOpen(false);
+    };
+
     const groupedConfigs = configs.reduce((acc, config) => {
         const env = config.envType;
         if (!acc[env]) {
@@ -484,12 +647,12 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                                     sortedEnvTypes.map(envType => (
                                         <ListItem
                                             key={envType}
-                                            button
-                                            onClick={() => handleEnvTypeClick(parseInt(envType))}
                                             sx={{
                                                 border: '1px solid #e0e0e0',
                                                 borderRadius: '8px',
                                                 backgroundColor: '#f8f8f8',
+                                                position: 'relative',
+                                                overflow: 'hidden',
                                                 '&:hover': {
                                                     backgroundColor: '#e3f2fd',
                                                     borderColor: '#90caf9',
@@ -502,14 +665,48 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                                                 alignItems: 'flex-start',
                                                 py: 2,
                                                 px: 2,
+                                                '&:hover .delete-env-button': {
+                                                    opacity: 1,
+                                                    pointerEvents: 'auto',
+                                                },
                                             }}
                                         >
-                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#3f51b5' }}>
-                                                {getEnvTypeName(parseInt(envType))}
-                                            </Typography>
-                                            <Typography variant="body2" color="textSecondary">
-                                                {groupedConfigs[envType].length} configurations
-                                            </Typography>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'flex-start',
+                                                width: '100%',
+                                                cursor: 'pointer',
+                                            }}
+                                                onClick={() => handleEnvTypeClick(parseInt(envType))}
+                                            >
+                                                <Box>
+                                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: '#3f51b5' }}>
+                                                        {getEnvTypeName(parseInt(envType))}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        {groupedConfigs[envType].length} configurations
+                                                    </Typography>
+                                                </Box>
+                                                <IconButton
+                                                    aria-label="delete-environment"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteEnvType(parseInt(envType));
+                                                    }}
+                                                    className="delete-env-button"
+                                                    sx={{
+                                                        ml: 1,
+                                                        color: (theme) => theme.palette.error.main,
+                                                        opacity: 0,
+                                                        pointerEvents: 'none',
+                                                        transition: 'opacity 0.2s ease-in-out',
+                                                    }}
+                                                    disabled={loading}
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
                                         </ListItem>
                                     ))
                                 ) : (
@@ -526,7 +723,6 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                             </Typography>
                             <Paper sx={{ p: 3, borderRadius: '12px', backgroundColor: '#ffffff', boxShadow: 'none', border: 'none' }}>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    {/* EnvType Select */}
                                     <FormControl fullWidth size="small">
                                         <InputLabel id="env-type-select-label">Environment Type</InputLabel>
                                         <Select
@@ -541,7 +737,6 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                                         </Select>
                                     </FormControl>
 
-                                    {/* ConfigType Select */}
                                     <FormControl fullWidth size="small">
                                         <InputLabel id="config-type-select-label">Configuration Type</InputLabel>
                                         <Select
@@ -556,7 +751,6 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                                         </Select>
                                     </FormControl>
 
-                                    {/* Single Config TextField */}
                                     <TextField
                                         label="Config Content"
                                         value={newConfigText}
@@ -587,7 +781,15 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
                 onUpdateConfig={handleUpdateConfigValue}
                 envTypeName={getEnvTypeName(selectedEnvType)}
                 selectedAppId={applicationId}
+                onDeleteConfig={handleDeleteConfigFromList}
+                showSnackbar={showSnackbar}
             />
+            <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Dialog>
     );
 }

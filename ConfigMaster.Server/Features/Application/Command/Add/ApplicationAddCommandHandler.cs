@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ConfigMaster.Server.Features.Application.Command.Add;
 
-public class ApplicationAddCommandHandler(IApplicationRepository applicationRepository) : IRequestHandler<ApplicationAddCommand, ApiResponse<ApplicationEntity>>
+internal sealed class ApplicationAddCommandHandler(IApplicationRepository applicationRepository) : IRequestHandler<ApplicationAddCommand, ApiResponse<ApplicationEntity>>
 {
     private readonly IApplicationRepository _applicationRepository = applicationRepository;
     public async Task<ApiResponse<ApplicationEntity>> Handle(ApplicationAddCommand request, CancellationToken cancellationToken)

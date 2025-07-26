@@ -16,7 +16,7 @@ public static class ConfigEndpoints
             return await sender.Send(command);
         });
 
-        app.MapPost("api/configs/update", async ([FromBody] UpdateConfigCommand command, ISender sender) =>
+        app.MapPut("api/configs/update", async ([FromBody] UpdateConfigCommand command, ISender sender) =>
         {
             return await sender.Send(command);
         });

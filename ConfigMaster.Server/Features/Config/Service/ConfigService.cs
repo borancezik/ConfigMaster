@@ -5,21 +5,16 @@ using ConfigMaster.Server.Common.Service.SocketServerService;
 using ConfigMaster.Server.Features.Config.Data;
 using ConfigMaster.Server.Features.Config.Domain;
 using Microsoft.AspNetCore.SignalR;
+using System.Linq.Expressions;
 
 namespace ConfigMaster.Server.Features.Config.Service;
 
-public class ConfigService : IConfigService
+public class ConfigService(IConfigRepository configRepository, CacheService cacheService, IHubContext<SocketServerService> socketHub) : IConfigService
 {
-    private readonly IConfigRepository _configRepository;
-    private readonly CacheService _cacheService;
-    private readonly IHubContext<SocketServerService> _socketHub;
-    public ConfigService(IConfigRepository configRepository, CacheService cacheService, IHubContext<SocketServerService> socketHub)
-    {
-        _configRepository = configRepository;
-        _cacheService = cacheService;
-        _socketHub = socketHub;
-    }
-
+    private readonly IConfigRepository _configRepository = configRepository;
+    private readonly CacheService _cacheService = cacheService;
+    private readonly IHubContext<SocketServerService> _socketHub = socketHub;
+    
     public async Task<ApiResponse<ConfigEntity>> AddAsync(ConfigEntity config)
     {
         var entity = await _configRepository.AddAsync(config);
@@ -73,4 +68,10 @@ public class ConfigService : IConfigService
     {
         return await _configRepository.GetByApplicationId(applicationId);
     }
+
+    public async Task<ConfigEntity> GetByFilter(Expression<Func<ConfigEntity, bool>> filterExpression)
+    {
+        return await _configRepository.GetByFilter(filterExpression);
+    }
+
 }
