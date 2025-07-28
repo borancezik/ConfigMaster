@@ -1,10 +1,14 @@
-FROM node:20 AS build
+FROM node:20-alpine AS build-stage
 WORKDIR /app
+COPY package.json ./
+COPY package-lock.json ./
+RUN npm install
 COPY . .
-RUN npm install && npm run build
+RUN npm run build
 
-FROM node:20 AS serve
+FROM node:20-alpine AS production-stage
 WORKDIR /app
+COPY --from=build-stage /app/dist ./dist
 RUN npm install -g serve
-COPY --from=build /app/dist ./dist
-CMD ["serve", "-s", "dist", "-l", "5173"]
+EXPOSE 80
+CMD ["serve", "-s", "dist", "-l", "80"]

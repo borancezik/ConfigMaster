@@ -23,7 +23,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 // API'nin temel URL'si.
-const apiBase = 'https://localhost:7200/api';
+const apiBase = 'http://localhost:8080/api';
 
 // Enum for EnvType (matching C# enum values)
 const EnvType = {

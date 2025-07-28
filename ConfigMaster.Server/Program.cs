@@ -1,21 +1,22 @@
-using ConfigMaster.Server.Common.Models.Utils;
-using ConfigMaster.Server.Common;
-using ConfigMaster.Server.Features.Config.Data;
-using ConfigMaster.Server.Common.Service.CacheService.Abstract;
-using ConfigMaster.Server.Common.Service.CacheService.Concrete;
-using ConfigMaster.Server.Features.Application.Data;
-using ConfigMaster.Server.DataAccess;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.FeatureManagement;
-using StackExchange.Redis;
 using ConfigMaster.Common.Behaviors;
 using ConfigMaster.Features.Config.Command.AddCommand;
 using ConfigMaster.Features.Config.Query.GetById;
+using ConfigMaster.Server.Common;
+using ConfigMaster.Server.Common.Models.Utils;
+using ConfigMaster.Server.Common.Service.CacheService.Abstract;
+using ConfigMaster.Server.Common.Service.CacheService.Concrete;
+using ConfigMaster.Server.DataAccess;
+using ConfigMaster.Server.Features.Application;
+using ConfigMaster.Server.Features.Application.Data;
+using ConfigMaster.Server.Features.Config;
+using ConfigMaster.Server.Features.Config.Data;
 using ConfigMaster.Server.Features.Config.Service;
 using FluentValidation;
 using MediatR;
-using ConfigMaster.Server.Features.Config;
-using ConfigMaster.Server.Features.Application;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.FeatureManagement;
+using StackExchange.Redis;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +58,30 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var dbContext = services.GetRequiredService<ApplicationContext>();
+        if (dbContext.Database.GetPendingMigrations().Any())
+        {
+            app.Logger.LogInformation("Applying database migrations...");
+            dbContext.Database.Migrate();
+            app.Logger.LogInformation("Database migrations applied successfully.");
+        }
+        else
+        {
+            app.Logger.LogInformation("No pending database migrations to apply.");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while applying migrations to the database. Please ensure your local PostgreSQL is running and accessible.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -69,7 +94,7 @@ ApplicationEndpoints.MapEndpoints(app);
 app.UseHttpsRedirection();
 
 app.UseCors(builder => builder
-    .WithOrigins("http://localhost:5173/","https://localhost:5173/","http://localhost:5173", "https://localhost:5173", "http://localhost:51151/", "https://localhost:51151/", "http://localhost:51151", "https://localhost:51151")
+    .WithOrigins("http://localhost:5173/","https://localhost:5173/","http://localhost:5173", "https://localhost:5173", "http://localhost:51151/", "https://localhost:51151/", "http://localhost:51151", "https://localhost:51151", "http://localhost:3000")
     .AllowAnyMethod()
     .AllowAnyHeader());
 
