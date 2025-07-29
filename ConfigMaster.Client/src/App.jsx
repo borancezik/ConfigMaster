@@ -17,22 +17,18 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AppsIcon from '@mui/icons-material/Apps';
 import CloseIcon from '@mui/icons-material/Close';
 
-// Helper for Snackbar Alert
 const Alert = React.forwardRef(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-// API'nin temel URL'si.
 const apiBase = 'http://localhost:8080/api';
 
-// Enum for EnvType (matching C# enum values)
 const EnvType = {
     TEST: 0,
     PREPRODUCTION: 1,
     PRODUCTION: 2,
 };
 
-// Helper function to get EnvType name from value
 const getEnvTypeName = (value) => {
     switch (value) {
         case EnvType.TEST: return 'Test';
@@ -42,13 +38,11 @@ const getEnvTypeName = (value) => {
     }
 };
 
-// ConfigType Enum/Sabitleri
 const ConfigType = {
     APPSETTINGS: 0,
     SECRET: 1,
 };
 
-// Helper function to get ConfigType name from value
 const getConfigTypeName = (value) => {
     switch (value) {
         case ConfigType.APPSETTINGS: return 'App Settings';
@@ -256,16 +250,14 @@ function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeNa
 
     const handleSave = async () => {
         setLoading(true);
-        let hasError = false; // Herhangi bir güncellemede hata olup olmadýðýný tutar
+        let hasError = false;
         try {
-            // Her bir konfigürasyonu döngüye al
             for (const config of configs) {
                 const currentEditedText = editedConfigs[config.id];
-                // Yalnýzca deðiþiklik varsa API isteði yap
                 if (currentEditedText !== config.config) {
                     const updateCommand = {
                         id: config.id,
-                        applicationId: selectedAppId, // veya config.applicationId, hangisi doðruysa
+                        applicationId: selectedAppId,
                         envType: config.envType,
                         configType: config.configType,
                         config: currentEditedText
@@ -303,19 +295,16 @@ function ConfigDetailsDialog({ open, onClose, configs, onUpdateConfig, envTypeNa
                             console.error('Error updating config (Raw response):', rawText);
                         }
                     } catch (fetchError) {
-                        // Að hatasý, CORS veya JSON ayrýþtýrma hatasý gibi durumlar
                         hasError = true;
                         console.error(`Error during fetch for config ${config.id}:`, fetchError);
                         showSnackbar(`Network error or malformed response for config ${config.id}: ${fetchError.message}`, 'error');
                     }
                 }
             }
-            // Tüm iþlemler bittikten sonra, eðer hiç hata olmadýysa dialogu kapat
             if (!hasError) {
                 onClose();
             }
         } catch (error) {
-            // Toplam 'Save Changes' sürecinde beklenmedik bir hata olursa
             hasError = true;
             console.error('Error in save configurations process:', error);
             showSnackbar(`An unexpected error occurred: ${error.message}`, 'error');
@@ -456,7 +445,6 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-    // Snackbar gösterme helper fonksiyonu
     const showSnackbar = (message, severity) => {
         setSnackbarMessage(message);
         setSnackbarSeverity(severity);
@@ -538,7 +526,6 @@ function ConfigListDialog({ open, onClose, applicationId, selectedAppName }) {
         setConfigs(prev => prev.filter(c => c.id !== configIdToDelete));
         setConfigsForDetailsDialog(prev => prev.filter(c => c.id !== configIdToDelete));
         showSnackbar('Configuration deleted successfully!', 'success');
-        // Ýsteðe baðlý olarak, tam yenileme isterseniz fetchConfigs() çaðrýlabilir
     };
 
 
@@ -867,7 +854,6 @@ export default function App() {
 
     return (
         <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-            {/* Left Navigation / Sidebar */}
             <Box sx={{
                 width: 260,
                 flexShrink: 0,
@@ -938,9 +924,7 @@ export default function App() {
                 </List>
             </Box>
 
-            {/* Main Content Area */}
             <Box sx={{ flexGrow: 1, p: 4 }}>
-                {/* Header / Toolbar */}
                 <AppBar position="static" color="transparent" elevation={0} sx={{ mb: 4 }}>
                     <Toolbar sx={{ justifyContent: 'space-between', px: 0 }}>
                         <Typography variant="h4" component="div" sx={{ flexGrow: 1, fontWeight: '700', color: '#333' }}>
@@ -950,7 +934,6 @@ export default function App() {
                     </Toolbar>
                 </AppBar>
 
-                {/* Content Section - Application List */}
                 {selectedMenuItem === 'applications' && (
                     <>
                         <Box sx={{ mb: 4, display: 'flex', justifyContent: 'flex-end' }}>
