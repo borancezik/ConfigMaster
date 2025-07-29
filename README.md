@@ -1,116 +1,182 @@
-# ConfigMaster
+# ConfigMaster: Centralized Application Configuration Management System
 
-ConfigMaster is a robust configuration management application developed using .NET Core 8.0 and React. This application provides an intuitive interface to easily manage and store settings for your services and applications from a centralized location. While currently in the development phase, it is built upon a solid foundation with modern architectural approaches.
+ConfigMaster is a centralized configuration management system designed to manage configurations across different environments (Test, Pre-Prod, Prod) and application types. It consists of a backend built with ASP.NET Core and a frontend built with React (Vite). PostgreSQL is used as the database.
 
-## Features (Under Development)
+## 🚀 Features
 
-* **Centralized Configuration Management:** Manage all your application configurations from a single point.
-* **Environment-Specific Settings:** Ability to manage separate configurations for different environments such as Test, Pre-Production, and Production.
-* **Responsive & Modern User Interface:** A user-friendly and interactive frontend experience developed with React.
-* **Live Configuration Updates (Planned):** Instantaneous distribution of configuration changes via SignalR integration.
+- **Application Management**: Add, edit, and delete applications.
+- **Environment-Specific Configurations**: Manage configurations per environment (Test, Pre-Prod, Prod) for each application.
+- **Easy Access**: Retrieve configurations for your applications via API.
+- **Docker Support**: Quickly launch frontend and backend components using Docker Compose.
 
-## Technologies
+## 💠 Tech Stack
 
-The ConfigMaster project leverages various current technologies and architectural patterns to ensure a modern and scalable structure:
+- **Backend**: ASP.NET Core 9.0
+- **Frontend**: React (Vite)
+- **Database**: PostgreSQL
+- **Containerization**: Docker & Docker Compose
 
-### Backend
+## ⚙️ Prerequisites
 
-* **.NET Core 8.0:** A powerful, high-performance, and cross-platform compatible backend framework.
-* **Vertical Slice Architecture:** Improves development speed and maintainability by organizing the codebase into vertical slices.
-* **Minimal API:** A modern approach to creating lightweight and performant API endpoints.
-* **SignalR:** Used for real-time bidirectional communication (planned for live configuration updates).
-* **PostgreSQL:** A reliable and flexible relational database.
-* **Specification Design Pattern:** To encapsulate query logic in a reusable and testable manner.
-* **Repository Design Pattern:** To separate the data access layer, enhancing flexibility and testability.
-* **In-Memory and Distributed Caching:** Caching mechanisms to improve performance and reduce database load.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- PostgreSQL (port 5432 open, database must be created)
 
-### Frontend
+---
 
-* **React:** A popular JavaScript library for building dynamic and interactive user interfaces.
-* **MUI (Material-UI):** A comprehensive UI library for fast and beautiful React component development.
-* **Vite:** A next-generation frontend tooling that provides a blazing-fast development experience.
+## 📆 Setup and Run Steps
 
-## Getting Started
-
-To run the project in your local development environment, you have two primary options: **using Docker Compose** for a quick setup, or **running components individually**.
-
-### Option 1: Using Docker Compose (Recommended for Quick Setup)
-
-This is the fastest way to get all services (Backend, Frontend, and PostgreSQL) up and running.
-
-1. **Prerequisites:**
-
-   * [Docker](https://docs.docker.com/get-docker/) installed and running on your system.
-   * [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop) installed.
-
-2. **Configuration:**
-
-   * Ensure your `docker-compose.yaml` file is correctly configured for your PostgreSQL service and application settings. You might need to adjust database credentials or port mappings if they differ from the defaults.
-
-3. **Build and Run:**
-
-   Navigate to the root directory of your project (where the `docker-compose.yaml` file is located) and run:
-
-   ```bash
-   docker compose up --build -d
-   ```
-
-   * `--build`: Builds (or rebuilds) the images before starting containers. This is crucial for the first run or after code changes.
-   * `-d`: Runs the containers in detached mode (in the background).
-
-4. **Access the Application:**
-
-   * React Frontend: [http://localhost:5173](http://localhost:5173)
-   * .NET Core Backend: [https://localhost:7045](https://localhost:7045)
-
-5. **Stop Services:**
-
-   To stop all running services and remove containers, networks, and volumes created by Docker Compose:
-
-   ```bash
-   docker compose down
-   ```
-
-### Option 2: Running Components Individually
-
-If you prefer to run the Backend and Frontend separately (e.g., for specific development workflows), follow these steps:
-
-#### 1. Database Setup
-
-Install and configure a PostgreSQL database. Update the necessary database connection settings in the `appsettings.json` file or via environment variables.
-
-#### 2. Run the Backend
-
-Navigate to the root directory of the project (where the Backend folder is located) and run:
+### 🔹 Step 1: Clone the Repository
 
 ```bash
- dotnet run
+git clone https://github.com/YOUR_USERNAME/ConfigMaster.git
+cd ConfigMaster
 ```
 
-This command will start the backend API, typically at [https://localhost:7045](https://localhost:7045) (or a similar port).
+> 📌 **Note:** Replace `YOUR_USERNAME` with your actual GitHub username.
 
-#### 3. Run the Frontend
+---
 
-Navigate to the `ConfigMaster.Client` directory, install dependencies, and start the application:
+### 🔹 Step 2: Prepare the Local PostgreSQL Database
+
+1. Connect to your PostgreSQL server (via `psql`, `PgAdmin`, etc.)
+2. Create the database and user:
+
+```sql
+CREATE DATABASE "ConfigMasterDb";
+CREATE USER myuser WITH PASSWORD 'mypassword';
+GRANT ALL PRIVILEGES ON DATABASE "ConfigMasterDb" TO myuser;
+```
+
+> ⚠️ Replace `myuser` and `mypassword` with your own credentials.
+
+3. Ensure your PostgreSQL server is listening on port `5432` and allows connections from `host.docker.internal`.
+
+---
+
+### 🔹 Step 3: Update `docker-compose.yml`
+
+Example `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  configmaster_server:
+    build:
+      context: .
+      dockerfile: ConfigMaster.Server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=host.docker.internal;Port=5432;Database=ConfigMasterDb;Username=myuser;Password=mypassword
+    networks:
+      - configmaster_network
+
+  configmaster_client:
+    build:
+      context: ./ConfigMaster.Client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - configmaster_server
+    networks:
+      - configmaster_network
+
+networks:
+  configmaster_network:
+    driver: bridge
+```
+
+> ⚠️ Make sure to update the `ConnectionStrings__DefaultConnection` with your actual PostgreSQL credentials.
+
+---
+
+### 🔹 Step 4: Automatic Application of Database Migrations
+
+The backend project is configured to automatically apply any pending Entity Framework Core migrations each time the application starts. This ensures your database is always in sync with the required schema, with no manual intervention needed.
+
+---
+
+### 🔹 Step 5: Check Frontend API URL
+
+Open `ConfigMaster.Client/src/App.js` and ensure the API URL is correctly set:
+
+```js
+const apiBase = 'http://localhost:8080/api';
+```
+
+---
+
+### 🔹 Step 6: Start Docker Containers
 
 ```bash
-cd ConfigMaster.Client
-npm install # or yarn install
-npm run dev # or yarn dev
+docker compose down
+docker compose up --build
 ```
 
-This command will start the React application, typically at [http://localhost:5173](http://localhost:5173) (or a similar port).
+You can follow the logs to confirm that the backend connects to the database and applies migrations.
 
-Open your browser and navigate to [http://localhost:5173](http://localhost:5173) to view the application.
+---
 
-## Contribution
+### 🔹 Step 7: Access the Application
 
-There are plenty of opportunities to contribute to the ConfigMaster project. All contributions are welcome!
+- **Frontend UI**: [http://localhost:3000](http://localhost:3000)
+- **Backend Swagger UI**: [http://localhost:8080/swagger](http://localhost:8080/swagger)
 
-* If you encounter any bugs or issues, please feel free to open an **Issue**.
-* If you'd like to propose a new feature or improve existing code, you can submit a **Pull Request**.
-* Please review the `CONTRIBUTING.md` file (if it exists) before contributing.
+---
 
-## License
+## 📦 Using ConfigMaster.Nuget Package (For API Consumers)
 
-This project is licensed under the MIT License. For more information, see the `LICENSE` file.
+### 1. Install the Package
+
+```bash
+dotnet add package ConfigMaster.Nuget
+```
+
+---
+
+### 2. Register the Service in `Program.cs`
+
+```csharp
+builder.Services.CreateConfigMasterClient(
+    builder.Configuration,
+    builder.Environment
+);
+```
+
+> This method reads `ConfigMaster:ServiceUrl`, `ApplicationId`, and `EnvironmentName` from `appsettings.json`.
+
+---
+
+### 3. Configure `appsettings.json`
+
+```json
+{
+  "ConfigMaster": {
+    "ServiceUrl": "http://localhost:8080",
+    "ApplicationId": "YOUR_API_GUID",
+    "EnvironmentName": "Development"
+  }
+}
+```
+
+> 📌 `ApplicationId` is the GUID of the application you created via the ConfigMaster UI.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a new branch: `feature/your-feature`
+3. Make your changes
+4. Submit a Pull Request 🎉
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
