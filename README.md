@@ -11,7 +11,7 @@ ConfigMaster is a centralized configuration management system designed to manage
 
 ## 💠 Tech Stack
 
-- **Backend**: ASP.NET Core 8.0
+- **Backend**: ASP.NET Core 9.0
 - **Frontend**: React (Vite)
 - **Database**: PostgreSQL
 - **Containerization**: Docker & Docker Compose
