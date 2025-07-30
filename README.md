@@ -157,7 +157,7 @@ builder.Services.CreateConfigMasterClient(
 {
   "ConfigMaster": {
     "ServiceUrl": "http://localhost:8080",
-    "ApplicationId": "YOUR_API_GUID"
+    "ApplicationId": "YOUR_API_ID_OR_GUID"
   }
 }
 ```
